@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
+
 class ProfessionalController extends Controller
 {
     /**
@@ -36,7 +37,6 @@ class ProfessionalController extends Controller
                     'created_at' => $professional->created_at,
                     'updated_at' => $professional->updated_at,
                 ];
-
             });
     }
 
@@ -79,7 +79,7 @@ class ProfessionalController extends Controller
             'specialty' => $data['specialty'],
             'description' => $data['description'] ?? null,
         ]);
-        
+
         return response()->json(
             $professional->load('user'),
             201
@@ -117,6 +117,83 @@ class ProfessionalController extends Controller
         return response()->json(
             $professional->load('user')
         );
+    }
+
+
+    public function profile(Request $request)
+    {
+        $professional = Professional::with('user')
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        return response()->json([
+            'id' => $professional->id,
+
+            // Usuario
+            'name' => $professional->user->name,
+            'lastName' => $professional->user->lastName,
+            'email' => $professional->user->email,
+            'phone' => $professional->user->phone,
+            'avatar' => $professional->user->avatar,
+
+            // Profesional
+            'specialty' => $professional->specialty,
+            'description' => $professional->description,
+
+            'created_at' => $professional->created_at,
+            'updated_at' => $professional->updated_at,
+        ]);
+    }
+
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $professional = Professional::where('user_id', $user->id)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            // Datos usuario
+            'name' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+
+            // Datos profesional
+            'specialty' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        // Actualizar usuario
+        $user->update([
+            'name' => $data['name'],
+            'lastName' => $data['lastName'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+        ]);
+
+        // Actualizar profesional
+        $professional->update([
+            'specialty' => $data['specialty'],
+            'description' => $data['description'] ?? null,
+        ]);
+
+        return response()->json([
+            'id' => $professional->id,
+
+            'name' => $user->name,
+            'lastName' => $user->lastName,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'avatar' => $user->avatar,
+
+            'specialty' => $professional->specialty,
+            'description' => $professional->description,
+
+            'created_at' => $professional->created_at,
+            'updated_at' => $professional->updated_at,
+        ]);
     }
 
 

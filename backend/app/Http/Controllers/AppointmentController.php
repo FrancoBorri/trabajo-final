@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
@@ -12,7 +13,42 @@ class AppointmentController extends Controller
      */
     public function index()
     {
-        return Appointment::all();
+        return Appointment::with(['professional.user', 'service'])
+            ->where('user_id', Auth::id())
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get();
+    }
+
+    /**
+     * Display a listing of the resource for the authenticated professional.
+     */
+    public function professionalAppointments(Request $request)
+    {
+        $professional = Auth::user()->professional;
+        $appointments = Appointment::with(['user', 'service'])
+            ->where('professional_id', $professional->id)
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get();
+        return response()->json($appointments);
+    }
+
+
+    /**
+     * Display a listing of the resource for the authenticated admin.
+     */
+    public function adminAppointments()
+    {
+        $appointments = Appointment::with([
+            'professional.user',
+            'user',
+            'service'
+        ])
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get();
+        return response()->json($appointments);
     }
 
     /**
@@ -48,7 +84,7 @@ class AppointmentController extends Controller
      */
     public function show(string $id)
     {
-        return Appointment::findOrFail($id);
+        return Appointment::with(['professional', 'service'])->findOrFail($id);
     }
 
     /**
@@ -79,6 +115,42 @@ class AppointmentController extends Controller
         $appointment->update($data);
 
         return response()->json($appointment);
+    }
+
+    public function cancel(Appointment $appointment)
+    {
+        if ($appointment->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'No estás autorizado para cancelar este turno.'
+            ], 403);
+        }
+
+        $appointment->update([
+            'status' => 'cancelled',
+        ]);
+
+        return response()->json([
+            'message' => 'Turno cancelado correctamente.',
+            'appointment' => $appointment,
+        ]);
+    }
+
+    public function complete(Appointment $appointment)
+    {
+        if ($appointment->professional_id !== Auth::user()->professional->id) {
+            return response()->json([
+                'message' => 'No estás autorizado para completar este turno.'
+            ], 403);
+        }
+
+        $appointment->update([
+            'status' => 'completed',
+        ]);
+
+        return response()->json([
+            'message' => 'Turno completado correctamente.',
+            'appointment' => $appointment,
+        ]);
     }
 
     /**

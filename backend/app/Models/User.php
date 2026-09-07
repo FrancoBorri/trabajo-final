@@ -11,13 +11,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'lastName', 'email', 'password', 'phone', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -32,9 +33,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function role()
+    public function professional()
     {
-        return $this->belongsToMany(Role::class, 'user_role')->withTimestamps();
+        return $this->hasOne(Professional::class);
     }
 
     protected function name(): Attribute

@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->string('description');
             $table->decimal('price', 10, 2);
             $table->integer('duration');
+            $table->softDeletes(); // Agregar columna deleted_at para soft deletes -> borrado logico
             $table->timestamps();
         });
     }

@@ -10,7 +10,7 @@ class ServiceController extends Controller
 {
     public function index()
     {
-        return Service::all();
+        return Service::with('professional.user')->get();
     }
 
     public function store(Request $request)
@@ -44,6 +44,7 @@ class ServiceController extends Controller
         $data['professional_id'] = $professional->id;
 
         $service = Service::create($data);
+        $service->load('professional.user');
 
 
         return response()->json($service, 201);
@@ -66,6 +67,7 @@ class ServiceController extends Controller
         ]);
 
         $service->update($data);
+        $service->load('professional.user');
 
         return response()->json($service);
     }

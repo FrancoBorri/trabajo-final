@@ -30,10 +30,57 @@ Route::post('/register', [
     'register'
 ]);
 
-Route::apiResource('services', ServiceController::class)
-    ->middleware('auth:sanctum');
+Route::apiResource(
+    'availability',
+    AvailabilityController::class
+)->middleware('auth:sanctum');
 
-Route::apiResource('users', UserController::class);
+Route::get(
+    '/professionals/{professional}/available-slots',
+    [AvailabilityController::class, 'availableSlots']
+);
+
+// Get appointments for a specific professional
+Route::get('/professional/appointments', [
+    AppointmentController::class,
+    'professionalAppointments'
+])->middleware('auth:sanctum');
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/professional/profile', [
+        ProfessionalController::class,
+        'profile'
+    ]);
+
+    Route::put('/professional/profile', [
+        ProfessionalController::class,
+        'updateProfile'
+    ]);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('appointments', AppointmentController::class);
+
+    Route::patch('/appointments/{appointment}/cancel', [
+        AppointmentController::class,
+        'cancel'
+    ]);
+
+    Route::patch('/appointments/{appointment}/complete', [
+        AppointmentController::class,
+        'complete'
+    ]);
+});
+
+// Admin route to get all appointments
+Route::get('/admin/appointments', [
+    AppointmentController::class,
+    'adminAppointments'
+])->middleware('auth:sanctum');
+
+
 Route::apiResource('professionals', ProfessionalController::class);
-Route::apiResource('availabilities', AvailabilityController::class);
-Route::apiResource('appointments', AppointmentController::class);
+Route::apiResource('services', ServiceController::class)->middleware('auth:sanctum');
+Route::apiResource('users', UserController::class);

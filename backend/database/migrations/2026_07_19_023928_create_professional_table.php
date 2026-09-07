@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained();
             $table->string('specialty');
             $table->string('description');
+            $table->softDeletes(); // Agregar columna deleted_at para soft deletes -> borrado logico
             $table->timestamps();
         });
     }
