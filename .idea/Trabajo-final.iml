@@ -122,6 +122,7 @@
       <excludeFolder url="file://$MODULE_DIR$/backend/storage/framework" />
       <excludeFolder url="file://$MODULE_DIR$/backend/vendor/_laravel_idea" />
       <excludeFolder url="file://$MODULE_DIR$/backend/vendor/laravel/sanctum" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/vendor/mercadopago/dx-php" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

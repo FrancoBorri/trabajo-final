@@ -130,6 +130,7 @@
       <path value="$PROJECT_DIR$/backend/vendor/phpoption/phpoption" />
       <path value="$PROJECT_DIR$/backend/vendor/_laravel_idea" />
       <path value="$PROJECT_DIR$/backend/vendor/laravel/sanctum" />
+      <path value="$PROJECT_DIR$/backend/vendor/mercadopago/dx-php" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.3">

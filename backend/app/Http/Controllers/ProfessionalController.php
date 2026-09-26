@@ -34,7 +34,6 @@ class ProfessionalController extends Controller
                 // Datos del profesional
                 'specialty' => $professional->specialty,
                 'description' => $professional->description,
-
                 'created_at' => $professional->created_at,
                 'updated_at' => $professional->updated_at,
             ];

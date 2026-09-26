@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+
+/* ==========================================================================
+   1. VARIABLES GLOBALES DE COLOR Y TEMA
+   ========================================================================== */
+:root {
+  /* Paleta Principal (Azules) */
+  --color-primary: #3b82f6;       /* Azul acento / interactivo */
+  --color-primary-hover: #1d4ed8; /* Azul intenso (hover) */
+  --color-primary-light: #60a5fa; /* Azul claro / highlights */
+  --color-primary-soft: rgba(59, 130, 246, 0.12); /* Fondo suave activo */
+
+  /* Colores de Fondo y Superficie (Sidebar y Dark Mode) */
+  --bg-sidebar: #1e3a8a;          /* Azul noche profundo (Sidebar) */
+  --bg-surface: #1e40af;          /* Azul medio (Tarjetas/Superficies) */
+  --bg-main: #f8fafc;             /* Fondo claro de las pantallas */
+  --bg-dark: #0f172a;             /* Fondo oscuro */
+
+  /* Colores de Texto */
+  --text-main: #0f172a;           /* Texto oscuro sobre fondos claros */
+  --text-primary-light: #ffffff;  /* Texto blanco */
+  --text-secondary-light: #bfdbfe;/* Texto azul pastel sutil */
+  --text-muted: #94a3b8;          /* Texto gris/secundario */
+
+  /* Estados y Bordes */
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-light: #e2e8f0;
+  --color-danger: #ef4444;        /* Rojo para logout / borrar */
+  --color-danger-bg: rgba(239, 68, 68, 0.15);
+}
+
+/* ==========================================================================
+   2. RESET BASE Y TIPOGRAFÍA
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   3. CLASES DE UTILIDAD GLOBALES
+   ========================================================================== */
+
+/* Botón Primario Estándar */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--text-primary-light);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Scrollbar Personalizado acorde al diseño */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}

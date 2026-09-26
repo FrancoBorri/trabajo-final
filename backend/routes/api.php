@@ -97,15 +97,6 @@ Route::apiResource(
 )->middleware('auth:sanctum');
 
 
-Route::post(
-    '/appointments/{appointment}/payment',
-    [PaymentController::class, 'create']
-)->middleware('auth:sanctum');
-
-Route::post(
-    '/payments/webhook',
-    [PaymentController::class, 'webhook']
-);
 
 Route::apiResource('professionals', ProfessionalController::class);
 Route::apiResource('services', ServiceController::class)->middleware('auth:sanctum');
