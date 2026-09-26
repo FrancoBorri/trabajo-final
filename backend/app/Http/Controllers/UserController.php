@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Professional;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,7 +20,12 @@ class UserController extends Controller
             $query->where('role', $request->role);
         }
 
-        return response()->json($query->get(), 200);
+        $perPage = $request->integer('per_page', 7);
+
+        return response()->json(
+            $query->paginate($perPage),
+            200
+        );
     }
 
     /**
@@ -44,6 +50,14 @@ class UserController extends Controller
             'role' => $validated['role'],
             'phone' => $validated['phone']
         ]);
+
+        if ($user->role === 'professional') {
+            Professional::create([
+                'user_id' => $user->id,
+                'specialty' => 'Sin especialidad',
+                'description' => '',
+            ]);
+        }
 
         return response()->json([
             'message' => 'Usuario creado correctamente.',
@@ -80,6 +94,17 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+
+        if (
+            ($validated['role'] ?? $user->role) === 'professional' &&
+            !$user->professional
+        ) {
+            Professional::create([
+                'user_id' => $user->id,
+                'specialty' => 'Sin especialidad',
+                'description' => '',
+            ]);
+        }
 
         return response()->json([
             'message' => 'Usuario actualizado correctamente.',

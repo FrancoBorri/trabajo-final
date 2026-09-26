@@ -8,44 +8,51 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Service::with('professional.user')->get();
+        $user = $request->user();
+
+        $query = Service::with('professional.user');
+
+        // Professionals manage only their own services; other authenticated
+        // roles need the full catalog to book or administer them.
+        if ($user?->role === 'professional') {
+            $professional = Professional::where('user_id', $user->id)->first();
+
+            if (!$professional) {
+                return response()->json([]);
+            }
+
+            $query->where('professional_id', $professional->id);
+        }
+
+        return $query->orderBy('title')->get();
     }
 
     public function store(Request $request)
     {
-
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
             'price' => 'required|numeric|min:0',
             'duration' => 'required|integer|min:1',
-            'professional_id' => 'sometimes|integer|exists:professionals,id',
         ]);
 
-
         $user = $request->user();
+
         if (!$user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json([
+                'message' => 'Unauthenticated.'
+            ], 401);
         }
 
-        // If professional_id provided, verify authorization (owner or admin)
-        if (isset($data['professional_id'])) {
-            $professional = Professional::findOrFail($data['professional_id']);
-            if ($professional->user_id !== $user->id && (($user->role ?? '') !== 'admin')) {
-                return response()->json(['message' => 'No autorizado.'], 403);
-            }
-        } else {
-            // use authenticated user's professional record
-            $professional = Professional::where('user_id', $user->id)->firstOrFail();
-        }
+        $professional = Professional::where('user_id', $user->id)->firstOrFail();
 
         $data['professional_id'] = $professional->id;
 
         $service = Service::create($data);
-        $service->load('professional.user');
 
+        $service->load('professional.user');
 
         return response()->json($service, 201);
     }

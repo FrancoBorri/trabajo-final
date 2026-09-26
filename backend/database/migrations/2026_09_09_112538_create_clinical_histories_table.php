@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('clinical_histories', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('user_id')
+                ->unique()
+                ->constrained('users')
+                ->restrictOnDelete();
+
+            $table->text('chief_complaint')->nullable();       // motivo_consulta
+            $table->text('medical_history')->nullable();      // antecedentes_relevantes
+            $table->text('initial_assessment')->nullable();    // evaluacion_inicial
+            $table->text('clinical_impression')->nullable();   // impresion_clinica
+            $table->text('therapeutic_goals')->nullable();    // objetivos_terapeuticos
+            $table->text('treatment_plan')->nullable();        // plan_tratamiento
+            $table->text('notes')->nullable();                 // observaciones
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('clinical_histories');
+    }
+};

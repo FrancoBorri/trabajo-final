@@ -34,6 +34,8 @@ class AuthController extends Controller
         if (($validated['role'] ?? null) === 'professional') {
             Professional::create([
                 'user_id' => $user->id,
+                'specialty' => 'Sin especialidad',
+                'description' => '',
             ]);
         }
 

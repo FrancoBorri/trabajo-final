@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\Professional;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,7 +26,22 @@ class AppointmentController extends Controller
      */
     public function professionalAppointments(Request $request)
     {
-        $professional = Auth::user()->professional;
+        $user = Auth::user();
+
+        if (!in_array(strtolower(trim($user->role)), ['professional', 'profesional'], true)) {
+            return response()->json([
+                'message' => 'Solo los profesionales pueden acceder a sus turnos.'
+            ], 403);
+        }
+
+        // Older professional users may not have a profile row because it was
+        // not created when they were registered from the admin panel.
+        $professional = $user->professional ?? Professional::create([
+            'user_id' => $user->id,
+            'specialty' => 'Sin especialidad',
+            'description' => '',
+        ]);
+
         $appointments = Appointment::with(['user', 'service'])
             ->where('professional_id', $professional->id)
             ->orderBy('date')
@@ -65,14 +81,19 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'professional_id' => 'required|exists:professionals,id',
             'service_id' => 'required|exists:services,id',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'status' => 'required|string|max:50',
+            'status' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
         ]);
+
+        $data['user_id'] = $request->user()->id;
+
+        // El turno siempre se crea como pendiente; se confirma cuando
+        // Mercado Pago aprueba el pago a través del webhook.
+        $data['status'] = 'pending';
 
         $appointment = Appointment::create($data);
 
@@ -137,7 +158,9 @@ class AppointmentController extends Controller
 
     public function complete(Appointment $appointment)
     {
-        if ($appointment->professional_id !== Auth::user()->professional->id) {
+        $professional = Auth::user()->professional;
+
+        if (!$professional || $appointment->professional_id !== $professional->id) {
             return response()->json([
                 'message' => 'No estás autorizado para completar este turno.'
             ], 403);

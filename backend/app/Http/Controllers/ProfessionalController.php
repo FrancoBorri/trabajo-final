@@ -13,31 +13,34 @@ class ProfessionalController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //Lista todos los profesionales y los usuarios relacionados
-        return Professional::with('user')
-            ->get()
-            ->map(function ($professional) {
+        $perPage = $request->get('per_page', 7);
 
-                return [
-                    'id' => $professional->id,
+        $professionals = Professional::with('user')
+            ->paginate($perPage);
 
-                    // Datos del usuario
-                    'name' => $professional->user->name,
-                    'lastName' => $professional->user->lastName,
-                    'email' => $professional->user->email,
-                    'phone' => $professional->user->phone,
-                    'avatar' => $professional->user->avatar,
+        $professionals->getCollection()->transform(function ($professional) {
+            return [
+                'id' => $professional->id,
 
-                    // Datos del profesional
-                    'specialty' => $professional->specialty,
-                    'description' => $professional->description,
+                // Datos del usuario
+                'name' => $professional->user->name,
+                'lastName' => $professional->user->lastName,
+                'email' => $professional->user->email,
+                'phone' => $professional->user->phone,
+                'avatar' => $professional->user->avatar,
 
-                    'created_at' => $professional->created_at,
-                    'updated_at' => $professional->updated_at,
-                ];
-            });
+                // Datos del profesional
+                'specialty' => $professional->specialty,
+                'description' => $professional->description,
+
+                'created_at' => $professional->created_at,
+                'updated_at' => $professional->updated_at,
+            ];
+        });
+
+        return response()->json($professionals);
     }
 
 
@@ -124,7 +127,13 @@ class ProfessionalController extends Controller
     {
         $professional = Professional::with('user')
             ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$professional) {
+            return response()->json([
+                'message' => 'Solo los profesionales pueden acceder a su perfil.'
+            ], 403);
+        }
 
         return response()->json([
             'id' => $professional->id,
@@ -151,7 +160,13 @@ class ProfessionalController extends Controller
         $user = $request->user();
 
         $professional = Professional::where('user_id', $user->id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$professional) {
+            return response()->json([
+                'message' => 'Solo los profesionales pueden editar su perfil.'
+            ], 403);
+        }
 
         $data = $request->validate([
             // Datos usuario
