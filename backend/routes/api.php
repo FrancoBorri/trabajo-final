@@ -5,7 +5,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ClinicalHistoryController;
 use App\Http\Controllers\ClinicalSessionController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
@@ -95,7 +94,6 @@ Route::apiResource(
     'clinical-histories',
     ClinicalHistoryController::class
 )->middleware('auth:sanctum');
-
 
 
 Route::apiResource('professionals', ProfessionalController::class);

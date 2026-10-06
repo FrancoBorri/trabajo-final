@@ -18,6 +18,9 @@ return new class extends Migration {
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
             $table->date('date');
             $table->time('time');
+
+            $table->unique(['professional_id', 'date', 'time']);
+
             $table->string('status', 30);
             $table->text('notes')->nullable();
             $table->timestamps();

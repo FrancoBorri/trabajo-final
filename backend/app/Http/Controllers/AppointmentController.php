@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\Professional;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -91,13 +92,22 @@ class AppointmentController extends Controller
 
         $data['user_id'] = $request->user()->id;
 
-        // El turno siempre se crea como pendiente; se confirma cuando
-        // Mercado Pago aprueba el pago a través del webhook.
+        // El turno siempre se crea como pendiente
         $data['status'] = 'pending';
 
-        $appointment = Appointment::create($data);
+        try {
+            $appointment = Appointment::create($data);
+            return response()->json($appointment, 201);
 
-        return response()->json($appointment, 201);
+        } catch (QueryException $e) {
+
+            if ($e->getCode() === '23505') {
+                return response()->json([
+                    'message' => 'Ese horario ya fue reservado. Por favor eligir otro horario.'
+                ], 409);
+            }
+            throw $e;
+        }
     }
 
     /**

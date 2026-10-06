@@ -60,9 +60,16 @@ const formatDate = (date: string) =>
 const serviceName = (appointment: Appointment) =>
   appointment.service?.title ?? 'Servicio no informado'
 
-const professionalName = (appointment: Appointment) =>
-  `${appointment.professional?.name ?? ''} ${appointment.professional?.lastName ?? ''}`.trim() ||
-  'Profesional no informado'
+const professionalName = (appointment: Appointment) => {
+  const professional = appointment.professional
+  const name = professional?.user?.name || professional?.name
+  const lastName = professional?.user?.lastName ||
+    professional?.user?.last_name ||
+    professional?.lastName
+  const fullName = `${name ?? ''} ${lastName ?? ''}`.trim()
+
+  return fullName || 'Profesional no informado'
+}
 
 const statusLabel = (status: AppointmentStatus) => {
   const labels: Record<AppointmentStatus, string> = {

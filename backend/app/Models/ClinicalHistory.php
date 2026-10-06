@@ -8,6 +8,7 @@ class ClinicalHistory extends Model
 {
     protected $fillable = [
         'user_id',
+        'professional_id',
         'chief_complaint',
         'medical_history',
         'initial_assessment',
@@ -21,6 +22,11 @@ class ClinicalHistory extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function professional()
+    {
+        return $this->BelongsTo(Professional::class);
     }
 
     public function clinicalSessions()

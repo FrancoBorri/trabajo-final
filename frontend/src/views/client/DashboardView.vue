@@ -46,9 +46,16 @@ const appointmentTitle = (appointment: Appointment) =>
 const statusLabel = (appointment: Appointment) =>
   appointment.status === 'confirmed' ? 'Aceptado' : 'Pendiente de aceptación'
 
-const professionalName = (appointment: Appointment) =>
-  `${appointment.professional?.name ?? ''} ${appointment.professional?.lastName ?? ''}`.trim() ||
-  'Profesional no informado'
+const professionalName = (appointment: Appointment) => {
+  const professional = appointment.professional
+  const name = professional?.user?.name || professional?.name
+  const lastName = professional?.user?.lastName ||
+    professional?.user?.last_name ||
+    professional?.lastName
+  const fullName = `${name ?? ''} ${lastName ?? ''}`.trim()
+
+  return fullName || 'Profesional no informado'
+}
 
 onMounted(async () => {
   try {

@@ -13,7 +13,6 @@ import BookAppointmentView from '@/views/client/BookAppointmentView.vue'
 import ClientAppointmentsView from '@/views/client/AppointmentsView.vue'
 import ClientDashboardView from '@/views/client/DashboardView.vue'
 
-import ProfessionalAgendaView from '@/views/professional/AgendaView.vue'
 import ProfessionalAppointmentsView from '@/views/professional/AppointmentsView.vue'
 import ProfessionalAvailabilityView from '@/views/professional/AvailabilityView.vue'
 import ProfessionalDashboardView from '@/views/professional/DashboardView.vue'
@@ -122,10 +121,7 @@ const router = createRouter({
         {
           path: 'professional/agenda',
           name: 'professional-agenda',
-          component: ProfessionalAgendaView,
-          meta: {
-            roles: ['professional']
-          }
+          redirect: { name: 'professional-appointments' }
         },
         {
           path: 'professional/availability',

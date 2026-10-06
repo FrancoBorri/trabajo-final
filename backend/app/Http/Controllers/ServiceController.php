@@ -13,9 +13,7 @@ class ServiceController extends Controller
         $user = $request->user();
 
         $query = Service::with('professional.user');
-
-        // Professionals manage only their own services; other authenticated
-        // roles need the full catalog to book or administer them.
+        
         if ($user?->role === 'professional') {
             $professional = Professional::where('user_id', $user->id)->first();
 

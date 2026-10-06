@@ -18,7 +18,9 @@ return new class extends Migration {
                 ->constrained('users')
                 ->restrictOnDelete();
 
-            $table->text('chief_complaint')->nullable();       // motivo_consulta
+            $table->foreignId('professional_id');
+
+            $table->text('chief_complaint')->nullable();      // motivo_consulta
             $table->text('medical_history')->nullable();      // antecedentes_relevantes
             $table->text('initial_assessment')->nullable();    // evaluacion_inicial
             $table->text('clinical_impression')->nullable();   // impresion_clinica

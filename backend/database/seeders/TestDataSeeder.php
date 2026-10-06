@@ -17,8 +17,6 @@ class TestDataSeeder extends Seeder
     {
         $users = [
             ['name' => 'admin', 'lastName' => 'admin', 'email' => 'admin@test.com', 'phone' => '2920-123458', 'role' => 'admin'],
-            ['name' => 'client', 'lastName' => 'client', 'email' => 'client@test.com', 'phone' => '2920-123459', 'role' => 'client'],
-            ['name' => 'profesional', 'lastName' => 'profesional', 'email' => 'profesional@test.com', 'phone' => '2920-123460', 'role' => 'profesional'],
         ];
 
         foreach ($users as $data) {

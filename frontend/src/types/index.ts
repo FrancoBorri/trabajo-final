@@ -1,6 +1,5 @@
 export type Role = "admin" | "professional" | "client"
 export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled"
-export type PaymentStatus = "pending" | "approved" | "rejected" | "refunded"
 
 export interface User {
   id: string
@@ -15,7 +14,6 @@ export interface User {
   created_at: string
   updated_at: string
 }
-
 
 
 export interface Professional {
@@ -72,7 +70,6 @@ export interface Appointment {
   service: Service;
   client?: User;
   user?: User;
-  payment?: Payment | null;
   created_at: string
   updated_at: string
 }
@@ -90,6 +87,7 @@ export interface Availability {
 export interface ClinicalHistory {
   id: string
   user_id: number
+  professional_id: string
   chief_complaint: string
   medical_history: string
   initial_assessment: string
@@ -111,16 +109,4 @@ export interface ClinicalSession {
   observation: string
   created_at: string;
   updated_at: string;
-}
-
-export interface Payment {
-  id: number
-  appointment_id: number
-  user_id: number
-  amount: number
-  status: PaymentStatus
-  mercadopago_payment_id: string | null
-  mercadopago_preference_id: string | null
-  created_at: string
-  updated_at: string
 }

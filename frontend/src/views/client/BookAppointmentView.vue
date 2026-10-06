@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import {computed, onMounted, ref, watch} from 'vue'
+import {useAuthStore} from '@/stores/auth'
+import BookingConfirmation from '@/components/booking/BookingConfirmation.vue'
 import BookingCalendar from '@/components/booking/BookingCalendar.vue'
+import BookingServiceSelection from '@/components/booking/BookingServiceSelection.vue'
 import BookingTimesSlots from '@/components/booking/BookingTimesSlots.vue'
 import appointmentService from '@/services/appointmentService'
 import availabilityService from '@/services/availabilityService'
 import professionalService from '@/services/professionalService'
 import serviceService from '@/services/servicesService'
-import type { Availability, Professional, Service } from '@/types'
+import type {Availability, Professional, Service} from '@/types'
 
 const authStore = useAuthStore()
 const professionals = ref<Professional[]>([])
@@ -25,15 +27,20 @@ const error = ref('')
 const slotsError = ref('')
 const confirmationMessage = ref('')
 
-const today = new Date().toISOString().slice(0, 10)
+const now = new Date()
+const today = [
+  now.getFullYear(),
+  String(now.getMonth() + 1).padStart(2, '0'),
+  String(now.getDate()).padStart(2, '0')
+].join('-')
 const daysOfWeek = [
-  { value: 1, label: 'Lunes' },
-  { value: 2, label: 'Martes' },
-  { value: 3, label: 'Miércoles' },
-  { value: 4, label: 'Jueves' },
-  { value: 5, label: 'Viernes' },
-  { value: 6, label: 'Sábado' },
-  { value: 7, label: 'Domingo' }
+  {value: 1, label: 'Lunes'},
+  {value: 2, label: 'Martes'},
+  {value: 3, label: 'Miércoles'},
+  {value: 4, label: 'Jueves'},
+  {value: 5, label: 'Viernes'},
+  {value: 6, label: 'Sábado'},
+  {value: 7, label: 'Domingo'}
 ]
 
 const selectedProfessional = computed(() =>
@@ -112,28 +119,11 @@ const canSearchSlots = computed(() =>
   )
 )
 
-const professionalName = computed(() => {
-  const professional = selectedProfessional.value
-
-  return professional
-    ? `${professional.name} ${professional.lastName}`.trim()
+const professionalName = computed(() =>
+  selectedProfessional.value
+    ? `${selectedProfessional.value.name} ${selectedProfessional.value.lastName}`.trim()
     : ''
-})
-
-const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('es-AR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date(`${date}T00:00:00`))
-
-const formatPrice = (price: number) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 2
-  }).format(price)
+)
 
 const isAvailableDate = (date: string) =>
   selectedProfessionalAvailabilities.value.some(
@@ -163,7 +153,17 @@ const loadOptions = async () => {
       availabilityService.getAll()
     ])
 
-    professionals.value = professionalsResponse.data
+    const remainingPages = await Promise.all(
+      Array.from(
+        {length: Math.max(professionalsResponse.last_page - 1, 0)},
+        (_, index) => professionalService.getAll(index + 2)
+      )
+    )
+
+    professionals.value = [
+      ...professionalsResponse.data,
+      ...remainingPages.flatMap(page => page.data)
+    ]
     services.value = servicesResponse
     availabilities.value = availabilitiesResponse
   } catch (requestError) {
@@ -235,9 +235,11 @@ const submitAppointment = async () => {
     availableSlots.value = availableSlots.value.filter(
       slot => slot !== selectedTime.value
     )
-  } catch (requestError) {
+  } catch (requestError: any) {
     console.error('No se pudo reservar el turno:', requestError)
-    error.value = 'No se pudo confirmar el turno. Intentá nuevamente.'
+
+    error.value = requestError.response?.data?.message
+      ?? 'No se pudo confirmar el turno. Intentá nuevamente.'
   } finally {
     isSaving.value = false
   }
@@ -279,68 +281,12 @@ onMounted(loadOptions)
 
     <template v-else>
       <div class="booking-grid">
-        <article class="panel">
-          <div class="step-heading">
-            <span class="step">1</span>
-            <div>
-              <h2>Elegí la atención</h2>
-              <p>Seleccioná quién te atenderá y el servicio.</p>
-            </div>
-          </div>
-
-          <label>
-            Profesional
-            <select v-model="selectedProfessionalId">
-              <option value="" disabled>Seleccioná un profesional</option>
-              <option
-                v-for="professional in professionals"
-                :key="professional.id"
-                :value="professional.id"
-              >
-                {{ professional.name }} {{ professional.lastName }}
-                <template v-if="professional.specialty">
-                  · {{ professional.specialty }}
-                </template>
-              </option>
-            </select>
-          </label>
-
-          <fieldset class="service-picker" :disabled="!selectedProfessionalId">
-            <legend>Servicio</legend>
-            <p v-if="!selectedProfessionalId" class="service-hint">
-              Primero seleccioná un profesional para ver sus servicios.
-            </p>
-            <div v-else-if="professionalServices.length" class="service-options">
-              <button
-                v-for="service in professionalServices"
-                :key="service.id"
-                class="service-option"
-                :class="{ selected: selectedServiceId === String(service.id) }"
-                type="button"
-                :aria-pressed="selectedServiceId === String(service.id)"
-                @click="selectedServiceId = String(service.id)"
-              >
-                <span class="service-option-top">
-                  <span class="service-title">{{ service.title }}</span>
-                  <span class="service-price">{{ formatPrice(service.price) }}</span>
-                </span>
-                <span v-if="service.description" class="service-description">
-                  {{ service.description }}
-                </span>
-                <span class="service-duration">
-                  {{ service.duration }} minutos
-                </span>
-              </button>
-            </div>
-          </fieldset>
-
-          <p
-            v-if="selectedProfessionalId && !professionalServices.length"
-            class="state"
-          >
-            Este profesional no tiene servicios disponibles.
-          </p>
-        </article>
+        <BookingServiceSelection
+          v-model:professional-id="selectedProfessionalId"
+          v-model:service-id="selectedServiceId"
+          :professionals="professionals"
+          :professional-services="professionalServices"
+        />
 
         <article class="panel">
           <div class="step-heading">
@@ -371,51 +317,17 @@ onMounted(loadOptions)
         </article>
       </div>
 
-      <article class="panel confirmation-panel">
-        <div class="step-heading">
-          <span class="step">3</span>
-          <div>
-            <h2>Confirmación del turno</h2>
-            <p>Revisá los datos antes de confirmar.</p>
-          </div>
-        </div>
-
-        <div v-if="selectedProfessional && selectedService && selectedTime" class="summary">
-          <div>
-            <span>Profesional</span>
-            <strong>{{ professionalName }}</strong>
-          </div>
-          <div>
-            <span>Servicio</span>
-            <strong>{{ selectedService.title }}</strong>
-          </div>
-          <div>
-            <span>Fecha y hora</span>
-            <strong>{{ formatDate(selectedDate) }} · {{ selectedTime }}</strong>
-          </div>
-          <div>
-            <span>Duración</span>
-            <strong>{{ selectedService.duration }} minutos</strong>
-          </div>
-          <div>
-            <span>Precio</span>
-            <strong class="price">{{ formatPrice(selectedService.price) }}</strong>
-          </div>
-        </div>
-        <p v-else class="state">Completá los pasos anteriores para ver el resumen.</p>
-
-        <p v-if="confirmationMessage" class="success">{{ confirmationMessage }}</p>
-        <p v-if="error && selectedProfessional" class="state error">{{ error }}</p>
-
-        <button
-          class="btn-primary confirm-button"
-          type="button"
-          :disabled="!selectedTime || isSaving"
-          @click="submitAppointment"
-        >
-          {{ isSaving ? 'Confirmando...' : 'Confirmar turno' }}
-        </button>
-      </article>
+      <BookingConfirmation
+        :professional="selectedProfessional"
+        :service="selectedService"
+        :professional-name="professionalName"
+        :date="selectedDate"
+        :time="selectedTime"
+        :error="error"
+        :confirmation-message="confirmationMessage"
+        :is-saving="isSaving"
+        @confirm="submitAppointment"
+      />
     </template>
   </section>
 </template>
@@ -430,7 +342,6 @@ onMounted(loadOptions)
 }
 
 h1,
-h2,
 p {
   margin-top: 0;
 }
@@ -445,10 +356,12 @@ h2 {
 }
 
 .page-header p,
-.step-heading p,
-.state,
-label span {
+.state {
   color: var(--text-muted);
+}
+
+.error {
+  color: var(--color-danger);
 }
 
 .booking-grid {
@@ -483,157 +396,8 @@ label span {
   font-weight: 700;
 }
 
-select,
-input {
-  width: 100%;
-  padding: 11px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--text-main);
-  font: inherit;
-}
-
-select:disabled,
-input:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.service-picker {
-  min-width: 0;
-  margin: 20px 0 0;
-  padding: 0;
-  border: 0;
-}
-
-.service-picker legend {
-  margin-bottom: 10px;
-  color: var(--text-main);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.service-options {
-  display: grid;
-  gap: 10px;
-}
-
-.service-option {
-  display: grid;
-  gap: 8px;
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--text-main);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
-}
-
-.service-option:hover {
-  border-color: #93c5fd;
-  background: #f8fbff;
-}
-
-.service-option.selected {
-  border-color: var(--color-primary);
-  background: #eff6ff;
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
-.service-option:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.service-option-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.service-title {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.service-price {
-  flex: 0 0 auto;
-  color: var(--color-primary);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.service-description,
-.service-duration,
-.service-hint {
+.step-heading p {
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.service-duration {
-  width: fit-content;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #f1f5f9;
-}
-
-.confirmation-panel {
-  margin-top: 16px;
-}
-
-.summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 16px;
-  border-radius: 8px;
-  background: var(--bg-main);
-}
-
-.summary div {
-  display: grid;
-  gap: 6px;
-}
-
-.summary span {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.summary strong {
-  font-size: 14px;
-}
-
-.summary strong.price {
-  color: var(--color-primary);
-  font-size: 16px;
-}
-
-.confirm-button {
-  margin-top: 8px;
-}
-
-.confirm-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.error {
-  color: var(--color-danger);
-}
-
-.success {
-  margin-bottom: 12px;
-  color: #15803d;
-  font-weight: 600;
 }
 
 @media (max-width: 800px) {
@@ -641,8 +405,7 @@ input:disabled {
     padding: 20px;
   }
 
-  .booking-grid,
-  .summary {
+  .booking-grid {
     grid-template-columns: 1fr;
   }
 }

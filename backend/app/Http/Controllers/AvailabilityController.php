@@ -14,8 +14,22 @@ class AvailabilityController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
+        if (in_array(strtolower(trim($user->role)), ['professional', 'profesional'], true)) {
+            $professional = $user->professional;
+
+            if (!$professional) {
+                return response()->json([
+                    'message' => 'El usuario no tiene un profesional asociado.'
+                ], 422);
+            }
+
+            return $professional->availability()->get();
+        }
+
         return Availability::all();
     }
 
@@ -39,10 +53,11 @@ class AvailabilityController extends Controller
         ]);
 
         $professional = $request->user()->professional;
+
         if (!$professional) {
-        return response()->json([
-            'message' => 'El usuario no tiene un profesional asociado.'
-        ], 422);
+            return response()->json([
+                'message' => 'El usuario no tiene un profesional asociado.'
+            ], 422);
         }
 
         $availability = $professional->availability()->create($data);
@@ -71,7 +86,15 @@ class AvailabilityController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $availability = Availability::findOrFail($id);
+        $professional = $request->user()->professional;
+
+        if (!$professional) {
+            return response()->json([
+                'message' => 'El usuario no tiene un profesional asociado.'
+            ], 422);
+        }
+
+        $availability = $professional->availability()->findOrFail($id);
 
         $data = $request->validate([
             'day_week' => 'required|integer|between:1,7',
@@ -87,9 +110,17 @@ class AvailabilityController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $availability = Availability::findOrFail($id);
+        $professional = $request->user()->professional;
+
+        if (!$professional) {
+            return response()->json([
+                'message' => 'El usuario no tiene un profesional asociado.'
+            ], 422);
+        }
+
+        $availability = $professional->availability()->findOrFail($id);
 
         $availability->delete();
 
@@ -125,13 +156,14 @@ class AvailabilityController extends Controller
         // 1 = lunes ... 7 = domingo
         $dayOfWeek = $date->dayOfWeekIso;
 
-        // Buscar disponibilidad del profesional para ese día
-        $availability = Availability::where('professional_id', $professionalId)
+        // Buscar todas las franjas disponibles del profesional para ese día
+        $availabilities = Availability::where('professional_id', $professionalId)
             ->where('day_week', $dayOfWeek)
-            ->first();
+            ->orderBy('time_start')
+            ->get();
 
         // El profesional no trabaja ese día
-        if (!$availability) {
+        if ($availabilities->isEmpty()) {
             return response()->json([
                 'date' => $date->toDateString(),
                 'slots' => [],
@@ -141,58 +173,53 @@ class AvailabilityController extends Controller
         // Duración del servicio en minutos
         $duration = $service->duration;
 
-        // Horario laboral
-        $workStart = Carbon::parse(
-            $date->toDateString() . ' ' . $availability->time_start
-        );
-
-        $workEnd = Carbon::parse(
-            $date->toDateString() . ' ' . $availability->time_end
-        );
-
         // Turnos existentes ese día
         $appointments = Appointment::where('professional_id', $professionalId)
             ->whereDate('date', $date->toDateString())
             ->whereNotIn('status', ['cancelled'])
+            ->with(['service' => fn ($query) => $query->withTrashed()])
             ->get();
 
         $slots = [];
 
-        $current = $workStart->copy();
+        foreach ($availabilities as $availability) {
+            $current = Carbon::parse(
+                $date->toDateString() . ' ' . $availability->time_start
+            );
+            $workEnd = Carbon::parse(
+                $date->toDateString() . ' ' . $availability->time_end
+            );
 
-        while (
-            $current->copy()
-                ->addMinutes($duration)
-                ->lessThanOrEqualTo($workEnd)
-        ) {
-            $candidateStart = $current->copy();
+            while ($current->copy()->addMinutes($duration)->lessThanOrEqualTo($workEnd)) {
+                $candidateStart = $current->copy();
+                $candidateEnd = $current->copy()->addMinutes($duration);
 
-            $candidateEnd = $current->copy()
-                ->addMinutes($duration);
+                // Verificar si se superpone con otro turno
+                $hasConflict = $appointments->contains(function ($appointment) use (
+                    $candidateStart,
+                    $candidateEnd,
+                    $date
+                ) {
+                    $appointmentStart = Carbon::parse(
+                        $date->toDateString() . ' ' . $appointment->time
+                    );
+                    $appointmentEnd = $appointmentStart->copy()
+                        ->addMinutes($appointment->service->duration);
 
-            // Verificar si se superpone con otro turno
-            $hasConflict = $appointments->contains(function ($appointment) use (
-                $candidateStart,
-                $candidateEnd,
-                $date
-            ) {
-                $appointmentStart = Carbon::parse(
-                    $date->toDateString() . ' ' . $appointment->time
-                );
+                    return $candidateStart->lt($appointmentEnd)
+                        && $candidateEnd->gt($appointmentStart);
+                });
 
-                $appointmentEnd = $appointmentStart->copy()
-                    ->addMinutes($appointment->service->duration);
+                if (!$hasConflict) {
+                    $slots[] = $candidateStart->format('H:i');
+                }
 
-                return $candidateStart->lt($appointmentEnd)
-                    && $candidateEnd->gt($appointmentStart);
-            });
-
-            if (!$hasConflict) {
-                $slots[] = $candidateStart->format('H:i');
+                $current->addMinutes($duration);
             }
-
-            $current->addMinutes($duration);
         }
+
+        $slots = array_values(array_unique($slots));
+        sort($slots);
 
         return response()->json([
             'date' => $date->toDateString(),

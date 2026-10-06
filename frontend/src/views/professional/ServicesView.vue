@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { Pencil, Trash2 } from 'lucide-vue-next'
 import professionalService from '@/services/professionalService'
 import serviceService from '@/services/servicesService'
 import type { Service } from '@/types'
 
-const authStore = useAuthStore()
 const services = ref<Service[]>([])
 const professionalId = ref<string | null>(null)
 const isLoading = ref(true)
@@ -150,16 +149,12 @@ const saveService = async () => {
 
 onMounted(async () => {
   try {
-    const [professionalsResponse, loadedServices] = await Promise.all([
-      professionalService.getAll(),
+    const [professional, loadedServices] = await Promise.all([
+      professionalService.getProfile(),
       serviceService.getAll()
     ])
 
-    const professional = professionalsResponse.data.find(item =>
-      String(item.userId) === String(authStore.user?.id)
-    )
-
-    if (!professional) {
+    if (!professional.id) {
       throw new Error('No se encontró el perfil profesional del usuario autenticado.')
     }
 
@@ -262,16 +257,24 @@ onMounted(async () => {
               <span>{{ formatPrice(service.price) }} · {{ service.duration }} min</span>
             </div>
             <div class="card-actions">
-              <button class="edit-button" type="button" @click="editService(service)">
-                Editar
+              <button
+                class="icon-button default"
+                type="button"
+                title="Editar servicio"
+                aria-label="Editar servicio"
+                @click="editService(service)"
+              >
+                <Pencil :size="16" />
               </button>
               <button
-                class="delete-button"
+                class="icon-button danger"
                 type="button"
                 :disabled="deletingId === service.id"
+                :title="deletingId === service.id ? 'Eliminando...' : 'Eliminar servicio'"
+                :aria-label="deletingId === service.id ? 'Eliminando...' : 'Eliminar servicio'"
                 @click="deleteService(service)"
               >
-                {{ deletingId === service.id ? 'Eliminando...' : 'Eliminar' }}
+                <Trash2 :size="16" />
               </button>
             </div>
           </article>
@@ -391,22 +394,34 @@ button {
   color: white;
 }
 
-.btn-secondary,
-.edit-button,
-.delete-button {
+.btn-secondary {
   padding: 9px 12px;
   border-radius: 8px;
   background: #fff;
 }
 
-.btn-secondary,
-.edit-button {
+.btn-secondary {
   border: 1px solid var(--border-light);
   color: var(--text-main);
 }
 
-.delete-button {
-  border: 1px solid #fecaca;
+.icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.icon-button.default {
+  color: var(--text-main);
+}
+
+.icon-button.danger {
+  border-color: #fecaca;
   color: var(--color-danger);
 }
 

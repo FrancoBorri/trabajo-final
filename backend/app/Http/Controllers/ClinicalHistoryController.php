@@ -16,20 +16,10 @@ class ClinicalHistoryController extends Controller
         $professional = Professional::where(
             'user_id',
             $request->user()->id
-        )->first();
+        )->firstOrFail();
 
-        // Cliente: devuelve únicamente su propia historia clínica.
-        if (!$professional) {
-            return ClinicalHistory::with('user')
-                ->where('user_id', $request->user()->id)
-                ->get();
-        }
-
-        // Profesional: historias de los pacientes con turnos asignados.
         return ClinicalHistory::with('user')
-            ->whereHas('user.appointments', function ($query) use ($professional) {
-                $query->where('professional_id', $professional->id);
-            })
+            ->where('professional_id', $professional->id)
             ->get();
     }
 
@@ -49,6 +39,9 @@ class ClinicalHistoryController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $professional = Professional::where('user_id', $request->user()->id)->firstOrFail();
+        $data['professional_id'] = $professional->id;
+
         $clinicalHistory = ClinicalHistory::create($data);
         return response()->json($clinicalHistory, 201);
     }
@@ -66,7 +59,8 @@ class ClinicalHistoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $clinicalHistory = ClinicalHistory::findOrFail($id);
+        $professional = Professional::where('user_id', $request->user()->id)->firstOrFail();
+        $clinicalHistory = $professional->clinicalHistory()->findOrFail($id);
         $data = $request->validate([
             'user_id' => 'required|exists:users,id',
             'chief_complaint' => 'nullable|string',
@@ -78,6 +72,7 @@ class ClinicalHistoryController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $data['professional_id'] = $professional->id;
         $clinicalHistory->update($data);
         return response()->json($clinicalHistory, 200);
     }
